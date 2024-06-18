@@ -76,6 +76,10 @@ type InputProps = Omit<React.ComponentPropsWithoutRef<typeof Primitive.input>, '
 type CommandProps = Children &
   DivProps & {
     /**
+     * Whether the command menu is currently loading asynchronous items.
+     */
+    loading?: boolean
+    /**
      * Accessible label for this command menu. Not shown visibly.
      */
     label?: string
@@ -132,13 +136,14 @@ type Context = {
 }
 type State = {
   search: string
+  loading: boolean
   value: string
   filtered: { count: number; items: Map<string, number>; groups: Set<string> }
 }
 type Store = {
   subscribe: (callback: () => void) => () => void
   snapshot: () => State
-  setState: <K extends keyof State>(key: K, value: State[K], opts?: any) => void
+  setState: <K extends keyof State>(key: K, value: State[K], opts?: any, focus?: boolean) => void
   emit: () => void
 }
 type Group = {
@@ -178,6 +183,7 @@ const Command = React.forwardRef<HTMLDivElement, CommandProps>((props, forwarded
   const state = useLazyRef<State>(() => ({
     /** Value of the search query. */
     search: '',
+    loading: props.loading,
     /** Currently selected item value. */
     value: props.value ?? props.defaultValue ?? '',
     filtered: {
@@ -198,6 +204,7 @@ const Command = React.forwardRef<HTMLDivElement, CommandProps>((props, forwarded
     label,
     children,
     value,
+    loading,
     onValueChange,
     filter,
     shouldFilter,
@@ -225,6 +232,16 @@ const Command = React.forwardRef<HTMLDivElement, CommandProps>((props, forwarded
   }, [value])
 
   useLayoutEffect(() => {
+    state.current.loading = loading
+    if (loading === false) {
+      state.current.loading = false
+      store.emit()
+      // trigger a re-render to update the items
+      store.setState('search', state.current.search, false, true)
+    }
+  }, [loading])
+
+  useLayoutEffect(() => {
     schedule(6, scrollSelectedIntoView)
   }, [])
 
@@ -237,8 +254,8 @@ const Command = React.forwardRef<HTMLDivElement, CommandProps>((props, forwarded
       snapshot: () => {
         return state.current
       },
-      setState: (key, value, opts) => {
-        if (Object.is(state.current[key], value)) return
+      setState: (key, value, opts, focus) => {
+        if (Object.is(state.current[key], value) && !focus) return
         state.current[key] = value
 
         if (key === 'search') {
@@ -376,7 +393,7 @@ const Command = React.forwardRef<HTMLDivElement, CommandProps>((props, forwarded
       // Get the maximum score of the group's items
       let max = 0
       items.forEach((item) => {
-        const score = scores.get(item)
+        const score = scores.get(item) ?? 0
         max = Math.max(score, max)
       })
 
@@ -679,6 +696,7 @@ const Item = React.forwardRef<HTMLDivElement, ItemProps>((props, forwardedRef) =
   }, [render, props.onSelect, props.disabled])
 
   function onSelect() {
+    if (store.snapshot().loading) return
     select()
     propsRef.current.onSelect?.(value.current)
   }
