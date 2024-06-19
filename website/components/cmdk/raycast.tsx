@@ -106,7 +106,14 @@ function Item({
   isCommand?: boolean
 }) {
   return (
-    <Command.Item value={value} keywords={keywords} onSelect={() => {}}>
+    <Command.Item
+      value={value}
+      keywords={keywords}
+      onSelect={() => {}}
+      onTab={(value) => {
+        console.log('Tab', value)
+      }}
+    >
       {children}
       <span cmdk-raycast-meta="">{isCommand ? 'Command' : 'Application'}</span>
     </Command.Item>

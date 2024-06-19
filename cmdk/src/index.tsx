@@ -44,6 +44,7 @@ type ItemProps = Children &
     disabled?: boolean
     /** Event handler for when this item is selected, either via click or keyboard selection. */
     onSelect?: (value: string) => void
+    onTab?: (value: string) => void
     /**
      * A unique value for this item.
      * If no value is provided, it will be inferred from `children` or the rendered `textContent`. If your `textContent` changes between renders, you _must_ provide a stable, unique `value`.
@@ -157,6 +158,7 @@ const GROUP_HEADING_SELECTOR = `[cmdk-group-heading=""]`
 const ITEM_SELECTOR = `[cmdk-item=""]`
 const VALID_ITEM_SELECTOR = `${ITEM_SELECTOR}:not([aria-disabled="true"])`
 const SELECT_EVENT = `cmdk-item-select`
+const TAB_EVENT = `cmdk-item-tab`
 const VALUE_ATTR = `data-value`
 const defaultFilter: CommandProps['filter'] = (value, search, keywords) => commandScore(value, search, keywords)
 
@@ -638,6 +640,19 @@ const Command = React.forwardRef<HTMLDivElement, CommandProps>((props, forwarded
                   item.dispatchEvent(event)
                 }
               }
+              break
+            }
+            case 'Tab': {
+              if (!e.nativeEvent.isComposing && e.keyCode !== 229) {
+                e.preventDefault()
+
+                // Trigger item onTab
+                const item = getSelectedItem()
+                if (item) {
+                  const event = new Event(TAB_EVENT)
+                  item.dispatchEvent(event)
+                }
+              }
             }
           }
         }
@@ -695,10 +710,22 @@ const Item = React.forwardRef<HTMLDivElement, ItemProps>((props, forwardedRef) =
     return () => element.removeEventListener(SELECT_EVENT, onSelect)
   }, [render, props.onSelect, props.disabled])
 
+  React.useEffect(() => {
+    const element = ref.current
+    if (!element || props.disabled) return
+    element.addEventListener(TAB_EVENT, onTab)
+    return () => element.removeEventListener(TAB_EVENT, onTab)
+  }, [render, props.onTab, props.disabled])
+
   function onSelect() {
     if (store.snapshot().loading) return
     select()
     propsRef.current.onSelect?.(value.current)
+  }
+
+  function onTab() {
+    if (store.snapshot().loading) return
+    propsRef.current.onTab?.(value.current)
   }
 
   function select() {
