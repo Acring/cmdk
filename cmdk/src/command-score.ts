@@ -153,10 +153,20 @@ function formatInput(string) {
 }
 
 export function commandScore(string: string, abbreviation: string, aliases: string[]): number {
-  /* NOTE:
-   * in the original, we used to do the lower-casing on each recursive call, but this meant that toLowerCase()
-   * was the dominating cost in the algorithm, passing both is a little ugly, but considerably faster.
-   */
-  string = aliases && aliases.length > 0 ? `${string + ' ' + aliases.join(' ')}` : string
-  return commandScoreInner(string, abbreviation, formatInput(string), formatInput(abbreviation), 0, 0, {})
+  // First calculate the score for the original string
+  let highestScore = 0
+  if (!aliases) {
+    highestScore = commandScoreInner(string, abbreviation, formatInput(string), formatInput(abbreviation), 0, 0, {})
+  } else {
+    highestScore = 0
+    // Iterate through each alias, calculate the score separately, and take the highest score
+    for (let alias of aliases) {
+      let score = commandScoreInner(alias, abbreviation, formatInput(alias), formatInput(abbreviation), 0, 0, {})
+      if (score > highestScore) {
+        highestScore = score
+      }
+    }
+  }
+
+  return highestScore
 }
