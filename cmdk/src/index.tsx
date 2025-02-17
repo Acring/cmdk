@@ -643,6 +643,11 @@ const Command = React.forwardRef<HTMLDivElement, CommandProps>((props, forwarded
               break
             }
             case 'Tab': {
+              // 检查当前选中的 item 是否有 TAB_EVENT 事件监听器
+              const item = getSelectedItem()
+              if (item && !item.hasAttribute('cmdk-item-tab')) {
+                break
+              }
               if (!e.nativeEvent.isComposing && e.keyCode !== 229) {
                 e.preventDefault()
 
@@ -742,6 +747,7 @@ const Item = React.forwardRef<HTMLDivElement, ItemProps>((props, forwardedRef) =
       {...etc}
       id={id}
       cmdk-item=""
+      cmdk-item-tab={props.onTab ? '' : undefined}
       role="option"
       aria-disabled={Boolean(disabled)}
       aria-selected={Boolean(selected)}
