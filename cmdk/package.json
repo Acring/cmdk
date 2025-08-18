@@ -1,6 +1,6 @@
 {
-  "name": "cmdk",
-  "version": "1.1.1",
+  "name": "@acring/cmdk",
+  "version": "1.1.1-fork.1",
   "license": "MIT",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
